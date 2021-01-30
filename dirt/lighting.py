@@ -6,13 +6,13 @@ from tensorflow.python.framework import ops
 def _repeat_1d(tensor, count):
 
     assert tensor.get_shape().ndims == 1
-    return tf.reshape(tf.tile(tensor[:, tf.newaxis], tf.convert_to_tensor([1, count])), [-1])
+    return tf.reshape(tf.tile(tensor[:, tf.newaxis], tf.convert_to_tensor(value=[1, count])), [-1])
 
 
 def _prepare_vertices_and_faces(vertices, faces):
 
-    vertices = tf.convert_to_tensor(vertices, name='vertices')
-    faces = tf.convert_to_tensor(faces, name='faces')
+    vertices = tf.convert_to_tensor(value=vertices, name='vertices')
+    faces = tf.convert_to_tensor(value=faces, name='faces')
 
     if faces.dtype is not tf.int32:
         assert faces.dtype is tf.int64
@@ -24,10 +24,10 @@ def _prepare_vertices_and_faces(vertices, faces):
 def _get_face_normals(vertices, faces):
 
     vertices_ndim = vertices.get_shape().ndims
-    vertices_by_index = tf.transpose(vertices, [vertices_ndim - 2] + list(range(vertices_ndim - 2)) + [vertices_ndim - 1])  # indexed by vertex-index, *, x/y/z
+    vertices_by_index = tf.transpose(a=vertices, perm=[vertices_ndim - 2] + list(range(vertices_ndim - 2)) + [vertices_ndim - 1])  # indexed by vertex-index, *, x/y/z
     vertices_by_face = tf.gather(vertices_by_index, faces)  # indexed by face-index, vertex-in-face, *, x/y/z
-    normals_by_face = tf.cross(vertices_by_face[:, 1] - vertices_by_face[:, 0], vertices_by_face[:, 2] - vertices_by_face[:, 0])  # indexed by face-index, *, x/y/z
-    normals_by_face /= (tf.norm(normals_by_face, axis=-1, keep_dims=True) + 1.e-12)  # ditto
+    normals_by_face = tf.linalg.cross(vertices_by_face[:, 1] - vertices_by_face[:, 0], vertices_by_face[:, 2] - vertices_by_face[:, 0])  # indexed by face-index, *, x/y/z
+    normals_by_face /= (tf.norm(tensor=normals_by_face, axis=-1, keepdims=True) + 1.e-12)  # ditto
     return normals_by_face, vertices_by_index
 
 
@@ -61,9 +61,9 @@ def vertex_normals(vertices, faces, name=None):
         vertices_ndim = vertices.get_shape().ndims
         normals_by_face, vertices_by_index = _get_face_normals(vertices, faces)  # normals_by_face is indexed by face-index, *, x/y/z
 
-        face_count = tf.shape(faces)[0]
-        vbi_shape = tf.shape(vertices_by_index)
-        N_extra = tf.reduce_prod(vbi_shape[1:-1])  # this is the number of 'elements' in the * dimensions
+        face_count = tf.shape(input=faces)[0]
+        vbi_shape = tf.shape(input=vertices_by_index)
+        N_extra = tf.reduce_prod(input_tensor=vbi_shape[1:-1])  # this is the number of 'elements' in the * dimensions
 
         assert vertices_ndim in {2, 3}  # ** keep it simple for now; in the general case we need a flattened outer product of ranges
         if vertices_ndim == 2:
@@ -77,7 +77,7 @@ def vertex_normals(vertices, faces, name=None):
                     _repeat_1d(tf.range(face_count, dtype=tf.int32), N_extra * 9),
                     _repeat_1d(tf.reshape(faces, [-1]), N_extra * 3)
                 ] + extra_indices + [
-                    tf.tile(tf.constant([0, 1, 2], dtype=tf.int32), tf.convert_to_tensor([face_count * N_extra * 3]))
+                    tf.tile(tf.constant([0, 1, 2], dtype=tf.int32), tf.convert_to_tensor(value=[face_count * N_extra * 3]))
                 ], axis=1),
                 tf.int64
             ),
@@ -85,10 +85,10 @@ def vertex_normals(vertices, faces, name=None):
             dense_shape=tf.cast(tf.concat([[face_count], vbi_shape], axis=0), tf.int64)
         )  # indexed by face-index, vertex-index, *, x/y/z
 
-        summed_normals_by_vertex = tf.sparse_reduce_sum(normals_by_face_and_vertex, axis=0)  # indexed by vertex-index, *, x/y/z
-        renormalised_normals_by_vertex = summed_normals_by_vertex / (tf.norm(summed_normals_by_vertex, axis=-1, keep_dims=True) + 1.e-12)  # ditto
+        summed_normals_by_vertex = tf.sparse.reduce_sum(normals_by_face_and_vertex, axis=0)  # indexed by vertex-index, *, x/y/z
+        renormalised_normals_by_vertex = summed_normals_by_vertex / (tf.norm(tensor=summed_normals_by_vertex, axis=-1, keepdims=True) + 1.e-12)  # ditto
 
-        result = tf.transpose(renormalised_normals_by_vertex, list(range(1, vertices_ndim - 1)) + [0, vertices_ndim - 1])
+        result = tf.transpose(a=renormalised_normals_by_vertex, perm=list(range(1, vertices_ndim - 1)) + [0, vertices_ndim - 1])
         result.set_shape(vertices.get_shape())
         return result
 
@@ -115,20 +115,20 @@ def vertex_normals_pre_split(vertices, faces, name=None, static=False):
 
         vertices, faces = _prepare_vertices_and_faces(vertices, faces)
         vertices = vertices[..., :3]  # drop the w-coordinate if present
-        face_count = int(faces.get_shape()[0]) if static else tf.shape(faces)[0]
+        face_count = int(faces.get_shape()[0]) if static else tf.shape(input=faces)[0]
 
         normals_by_face, _ = _get_face_normals(vertices, faces)  # indexed by face-index, *, x/y/z
         normals_by_face_flat = tf.reshape(
-            tf.transpose(normals_by_face, list(range(1, normals_by_face.get_shape().ndims - 1)) + [0, normals_by_face.get_shape().ndims - 1]),
+            tf.transpose(a=normals_by_face, perm=list(range(1, normals_by_face.get_shape().ndims - 1)) + [0, normals_by_face.get_shape().ndims - 1]),
             [-1, face_count, 3]
         )  # indexed by prod(*), face-index, x/y/z
 
         normals_by_vertex_flat = (_static_map_fn if static else tf.map_fn)(lambda normals_for_iib: tf.scatter_nd(
             indices=tf.reshape(faces, [-1, 1]),
             updates=tf.reshape(tf.tile(normals_for_iib[:, tf.newaxis, :], [1, 3, 1]), [-1, 3]),
-            shape=tf.shape(vertices)[-2:]
+            shape=tf.shape(input=vertices)[-2:]
         ), normals_by_face_flat)
-        normals_by_vertex = tf.reshape(normals_by_vertex_flat, tf.shape(vertices))
+        normals_by_vertex = tf.reshape(normals_by_vertex_flat, tf.shape(input=vertices))
 
         return normals_by_vertex
 
@@ -161,8 +161,8 @@ def split_vertices_by_face(vertices, faces, name=None):
 
         vertices, faces = _prepare_vertices_and_faces(vertices, faces)
 
-        vertices_shape = tf.shape(vertices)
-        face_count = tf.shape(faces)[0]
+        vertices_shape = tf.shape(input=vertices)
+        face_count = tf.shape(input=faces)[0]
 
         flat_vertices = tf.reshape(vertices, [-1, vertices_shape[-2], vertices_shape[-1]])
         new_flat_vertices = tf.map_fn(lambda vertices_for_iib: tf.gather(vertices_for_iib, faces), flat_vertices)
@@ -211,10 +211,10 @@ def diffuse_directional(vertex_normals, vertex_colors, light_direction, light_co
 
     with ops.name_scope(name, 'DiffuseDirectionalLight', [vertex_normals, vertex_colors, light_direction, light_color]) as scope:
 
-        vertex_normals = tf.convert_to_tensor(vertex_normals, name='vertex_normals')
-        vertex_colors = tf.convert_to_tensor(vertex_colors, name='vertex_colors')
-        light_direction = tf.convert_to_tensor(light_direction, name='light_direction')
-        light_color = tf.convert_to_tensor(light_color, name='light_color')
+        vertex_normals = tf.convert_to_tensor(value=vertex_normals, name='vertex_normals')
+        vertex_colors = tf.convert_to_tensor(value=vertex_colors, name='vertex_colors')
+        light_direction = tf.convert_to_tensor(value=light_direction, name='light_direction')
+        light_color = tf.convert_to_tensor(value=light_color, name='light_color')
 
         cosines = tf.matmul(vertex_normals, -light_direction[..., tf.newaxis])  # indexed by *, vertex-index, singleton
         if double_sided:
@@ -265,20 +265,20 @@ def specular_directional(vertex_positions, vertex_normals, vertex_reflectivities
 
     with ops.name_scope(name, 'SpecularDirectionalLight', [vertex_positions, vertex_normals, vertex_reflectivities, light_direction, light_color, camera_position, shininess]) as scope:
 
-        vertex_positions = tf.convert_to_tensor(vertex_positions, name='vertex_positions')
-        vertex_normals = tf.convert_to_tensor(vertex_normals, name='vertex_normals')
-        vertex_reflectivities = tf.convert_to_tensor(vertex_reflectivities, name='vertex_reflectivities')
-        light_direction = tf.convert_to_tensor(light_direction, name='light_direction')
-        light_color = tf.convert_to_tensor(light_color, name='light_color')
-        camera_position = tf.convert_to_tensor(camera_position, name='camera_position')
-        shininess = tf.convert_to_tensor(shininess, name='shininess')
+        vertex_positions = tf.convert_to_tensor(value=vertex_positions, name='vertex_positions')
+        vertex_normals = tf.convert_to_tensor(value=vertex_normals, name='vertex_normals')
+        vertex_reflectivities = tf.convert_to_tensor(value=vertex_reflectivities, name='vertex_reflectivities')
+        light_direction = tf.convert_to_tensor(value=light_direction, name='light_direction')
+        light_color = tf.convert_to_tensor(value=light_color, name='light_color')
+        camera_position = tf.convert_to_tensor(value=camera_position, name='camera_position')
+        shininess = tf.convert_to_tensor(value=shininess, name='shininess')
 
         vertices_to_light_direction = -light_direction
         reflected_directions = -vertices_to_light_direction + 2. * tf.matmul(vertex_normals, vertices_to_light_direction[..., tf.newaxis]) * vertex_normals  # indexed by *, vertex-index, x/y/z
         vertex_to_camera_displacements = camera_position[..., tf.newaxis, :] - vertex_positions  # indexed by *, vertex-index, x/y/z
         cosines = tf.reduce_sum(
-            (vertex_to_camera_displacements / tf.norm(vertex_to_camera_displacements, axis=-1, keep_dims=True) + 1.e-12) * reflected_directions,
-            axis=-1, keep_dims=True
+            input_tensor=(vertex_to_camera_displacements / tf.norm(tensor=vertex_to_camera_displacements, axis=-1, keepdims=True) + 1.e-12) * reflected_directions,
+            axis=-1, keepdims=True
         )  # indexed by *, vertex-index, singleton
         if double_sided:
             cosines = tf.abs(cosines)
@@ -326,19 +326,18 @@ def diffuse_point(vertex_positions, vertex_normals, vertex_colors, light_positio
 
     with ops.name_scope(name, 'DiffusePointLight', [vertex_positions, vertex_normals, vertex_colors, light_position, light_color]) as scope:
 
-        vertex_positions = tf.convert_to_tensor(vertex_positions, name='vertex_positions')
-        vertex_normals = tf.convert_to_tensor(vertex_normals, name='vertex_normals')
-        vertex_colors = tf.convert_to_tensor(vertex_colors, name='vertex_colors')
-        light_position = tf.convert_to_tensor(light_position, name='light_position')
-        light_color = tf.convert_to_tensor(light_color, name='light_color')
+        vertex_positions = tf.convert_to_tensor(value=vertex_positions, name='vertex_positions')
+        vertex_normals = tf.convert_to_tensor(value=vertex_normals, name='vertex_normals')
+        vertex_colors = tf.convert_to_tensor(value=vertex_colors, name='vertex_colors')
+        light_position = tf.convert_to_tensor(value=light_position, name='light_position')
+        light_color = tf.convert_to_tensor(value=light_color, name='light_color')
 
         relative_positions = vertex_positions - light_position[..., tf.newaxis, :]  # indexed by *, vertex-index, x/y/z
-        incident_directions = relative_positions / (tf.norm(relative_positions, axis=-1, keep_dims=True) + 1.e-12)  # ditto
-        cosines = tf.reduce_sum(vertex_normals * incident_directions, axis=-1)  # indexed by *, vertex-index
+        incident_directions = relative_positions / (tf.norm(tensor=relative_positions, axis=-1, keepdims=True) + 1.e-12)  # ditto
+        cosines = tf.reduce_sum(input_tensor=vertex_normals * incident_directions, axis=-1)  # indexed by *, vertex-index
         if double_sided:
             cosines = tf.abs(cosines)
         else:
             cosines = tf.maximum(cosines, 0.)
 
         return light_color[..., tf.newaxis, :] * vertex_colors * cosines[..., tf.newaxis]
-

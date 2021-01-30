@@ -35,20 +35,20 @@ def rodrigues(vectors, name=None, three_by_three=False):
 
     with ops.name_scope(name, 'Rodrigues', [vectors]) as scope:
 
-        vectors = tf.convert_to_tensor(vectors, name='vectors')
+        vectors = tf.convert_to_tensor(value=vectors, name='vectors')
 
         vectors += 1.e-12  # for numerical stability of the derivative, which is otherwise NaN at exactly zero; also ensures norms are never zero
-        norms = tf.norm(vectors, axis=-1, keepdims=True)  # indexed by *, singleton
+        norms = tf.norm(tensor=vectors, axis=-1, keepdims=True)  # indexed by *, singleton
         vectors /= norms
         norms = norms[..., 0]  # indexed by *
 
         z = tf.zeros_like(vectors[..., 0])  # ditto
-        K = tf.convert_to_tensor([
+        K = tf.convert_to_tensor(value=[
             [z, -vectors[..., 2], vectors[..., 1]],
             [vectors[..., 2], z, -vectors[..., 0]],
             [-vectors[..., 1], vectors[..., 0], z],
         ])  # indexed by x/y/z (in), x/y/z (out), *
-        K = tf.transpose(K, list(range(2, K.get_shape().ndims)) + [0, 1])  # indexed by *, x/y/z (in), x/y/z (out)
+        K = tf.transpose(a=K, perm=list(range(2, K.get_shape().ndims)) + [0, 1])  # indexed by *, x/y/z (in), x/y/z (out)
 
         c = tf.cos(norms)[..., tf.newaxis, tf.newaxis]
         s = tf.sin(norms)[..., tf.newaxis, tf.newaxis]
@@ -77,7 +77,7 @@ def translation(x, name=None):
 
     # x is indexed by *, x/y/z
     with ops.name_scope(name, 'Translation', []) as scope:
-        x = tf.convert_to_tensor(x, name='x')
+        x = tf.convert_to_tensor(value=x, name='x')
         zeros = tf.zeros_like(x[..., 0])  # indexed by *
         ones = tf.ones_like(zeros)
         return tf.stack([
@@ -103,7 +103,7 @@ def scale(x, name=None):
     """
 
     with ops.name_scope(name, 'Scale', []) as scope:
-        x = tf.convert_to_tensor(x, name='x')
+        x = tf.convert_to_tensor(value=x, name='x')
         return tf.linalg.diag(tf.concat([x, tf.ones_like(x[..., :1])], axis=-1))  # indexed by *, x/y/z/w (in), x/y/z/w (out)
 
 
@@ -128,10 +128,10 @@ def perspective_projection(near, far, right, aspect, name=None):
 
     with ops.name_scope(name, 'PerspectiveProjection', [near, far, right, aspect]) as scope:
 
-        near = tf.convert_to_tensor(near, name='near')
-        far = tf.convert_to_tensor(far, name='far')
-        right = tf.convert_to_tensor(right, name='right')
-        aspect = tf.convert_to_tensor(aspect, name='aspect')
+        near = tf.convert_to_tensor(value=near, name='near')
+        far = tf.convert_to_tensor(value=far, name='far')
+        right = tf.convert_to_tensor(value=right, name='right')
+        aspect = tf.convert_to_tensor(value=aspect, name='aspect')
 
         top = right * aspect
 
@@ -148,9 +148,9 @@ def perspective_projection(near, far, right, aspect, name=None):
             [zeros, zeros, -(far + near) / (far - near), -2. * far * near / (far - near)],
             [zeros, zeros, zeros - 1., zeros]
         ]  # indexed by x/y/z/w (out), x/y/z/w (in)
-        elements_tr = tf.convert_to_tensor(elements_tr, dtype=tf.float32)
+        elements_tr = tf.convert_to_tensor(value=elements_tr, dtype=tf.float32)
 
-        return tf.transpose(elements_tr, list(range(2, elements_tr.shape.ndims)) + [1, 0])
+        return tf.transpose(a=elements_tr, perm=list(range(2, elements_tr.shape.ndims)) + [1, 0])
 
 
 def pad_3x3_to_4x4(matrix, name=None):
@@ -173,7 +173,7 @@ def pad_3x3_to_4x4(matrix, name=None):
     # matrix is indexed by *, x/y/z (in), x/y/z (out)
     # result is indexed by *, x/y/z/w (in), x/y/z/w (out)
     with ops.name_scope(name, 'Pad3x3To4x4', [matrix]) as scope:
-        matrix = tf.convert_to_tensor(matrix, name='matrix')
+        matrix = tf.convert_to_tensor(value=matrix, name='matrix')
         return tf.concat([
             tf.concat([matrix, tf.zeros_like(matrix[..., :, :1])], axis=-1),
             tf.concat([tf.zeros_like(matrix[..., :1, :]), tf.ones_like(matrix[..., :1, :1])], axis=-1)
@@ -205,4 +205,3 @@ def compose(*matrices):
         return matrices[0]
     else:
         return tf.matmul(matrices[0], compose(*matrices[1:]))
-

@@ -40,16 +40,16 @@ def unproject_pixels_to_rays(pixel_locations, clip_to_world_matrix, image_size, 
 
     with ops.name_scope(name, 'UnprojectPixelsToRays', [pixel_locations, clip_to_world_matrix, image_size]) as scope:
 
-        pixel_locations = tf.convert_to_tensor(pixel_locations, name='pixel_locations', dtype=tf.float32)
-        clip_to_world_matrix = tf.convert_to_tensor(clip_to_world_matrix, name='clip_to_world_matrix', dtype=tf.float32)
-        image_size = tf.convert_to_tensor(image_size, name='image_size', dtype=tf.int32)
+        pixel_locations = tf.convert_to_tensor(value=pixel_locations, name='pixel_locations', dtype=tf.float32)
+        clip_to_world_matrix = tf.convert_to_tensor(value=clip_to_world_matrix, name='clip_to_world_matrix', dtype=tf.float32)
+        image_size = tf.convert_to_tensor(value=image_size, name='image_size', dtype=tf.int32)
 
         per_iib_dims = pixel_locations.get_shape().ndims - image_size.get_shape().ndims  # corresponds to m in the docstring
         image_size = tf.reshape(image_size, image_size.get_shape()[:-1].as_list() + [1] * per_iib_dims + [2])
         clip_to_world_matrix = tf.reshape(
             clip_to_world_matrix,
             tf.concat([
-                tf.shape(clip_to_world_matrix)[:-2],
+                tf.shape(input=clip_to_world_matrix)[:-2],
                 [1] * per_iib_dims + [4, 4]
             ], axis=0)
         )
@@ -59,7 +59,7 @@ def unproject_pixels_to_rays(pixel_locations, clip_to_world_matrix, image_size, 
         if int(version_bits[0]) <= 1 and int(version_bits[1]) < 14:
             clip_to_world_matrix = tf.broadcast_to(
                 clip_to_world_matrix,
-                tf.concat([tf.shape(pixel_locations)[:-1], [4, 4]], axis=0)
+                tf.concat([tf.shape(input=pixel_locations)[:-1], [4, 4]], axis=0)
             )
 
         pixel_locations_ndc = _pixel_to_ndc(pixel_locations, tf.cast(image_size, tf.float32))
@@ -67,4 +67,3 @@ def unproject_pixels_to_rays(pixel_locations, clip_to_world_matrix, image_size, 
         pixel_ray_deltas_world = _unproject_ndc_to_world(tf.concat([pixel_locations_ndc, tf.zeros_like(pixel_locations_ndc[..., :1])], axis=-1), clip_to_world_matrix) - pixel_ray_starts_world
 
     return pixel_ray_starts_world, pixel_ray_deltas_world
-

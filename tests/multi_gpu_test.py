@@ -24,11 +24,10 @@ def main():
     with tf.device('/gpu:1'):
         pixels_1 = make_pixels()
 
-    session = tf.Session()
+    session = tf.compat.v1.Session()
     with session.as_default():
         session.run([pixels_0, pixels_1])
 
 
 if __name__ == '__main__':
     main()
-

@@ -55,15 +55,15 @@ def mesh():
     w = 48
     h = 36
 
-    rotation_xy = tf.placeholder(tf.float32)
-    view_matrix_1 = tf.convert_to_tensor([
+    rotation_xy = tf.compat.v1.placeholder(tf.float32)
+    view_matrix_1 = tf.convert_to_tensor(value=[
         [0.5 * tf.cos(rotation_xy), 0.5 * -tf.sin(rotation_xy), 0., 0.],
         [0.5 * tf.sin(rotation_xy), 0.5 * tf.cos(rotation_xy), 0., 0.],
         [0., 0., 0.5, 0.],
         [0., 0., 0., 1.]
     ])
 
-    translation = tf.placeholder(tf.float32)
+    translation = tf.compat.v1.placeholder(tf.float32)
 
     view_matrix_2 = tf.stack([
         [1., 0., 0., 0.],
@@ -81,22 +81,22 @@ def mesh():
     projection_matrix = dirt.matrices.perspective_projection(0.1, 20., 0.2, float(h) / w)
     projected_vertices = tf.matmul(tf.matmul(tf.matmul(vertices, view_matrix_1), view_matrix_2), projection_matrix)
 
-    bgcolor = tf.placeholder(tf.float32, [3])
-    vertex_color = tf.placeholder(tf.float32, [3])
+    bgcolor = tf.compat.v1.placeholder(tf.float32, [3])
+    vertex_color = tf.compat.v1.placeholder(tf.float32, [3])
     vertex_colors = tf.concat([tf.tile(vertex_color[np.newaxis, :], [75, 1]), np.random.uniform(size=[vertex_count - 75, 3])], axis=0)
 
     im = dirt.rasterise_ops.rasterise(tf.concat([tf.tile(bgcolor[np.newaxis, np.newaxis, :], [h // 2, w, 1]), tf.ones([h // 2, w, 3])], axis=0), projected_vertices, vertex_colors, faces, height=h, width=w, channels=3)
     ims = dirt.rasterise_ops.rasterise_batch(tf.tile(tf.constant([[0., 0., 0.], [0., 0., 1.]])[:, np.newaxis, np.newaxis, :], [1, h, w, 1]), tf.tile(projected_vertices[np.newaxis, ...], [2, 1, 1]), np.random.uniform(size=[2, vertex_count, 3]), tf.tile(faces[np.newaxis, ...], [2, 1, 1]), height=h, width=w, channels=3)
 
-    d_loss_by_pixels = tf.placeholder(tf.float32, [h, w, 3])
-    [gt, gr, gb, gc] = tf.gradients(im, [translation, rotation_xy, bgcolor, vertex_color], d_loss_by_pixels)
+    d_loss_by_pixels = tf.compat.v1.placeholder(tf.float32, [h, w, 3])
+    [gt, gr, gb, gc] = tf.gradients(ys=im, xs=[translation, rotation_xy, bgcolor, vertex_color], grad_ys=d_loss_by_pixels)
 
-    ds_loss_by_pixels = tf.placeholder(tf.float32, [2, h, w, 3])
-    [gst, gsr] = tf.gradients(ims, [translation, rotation_xy], ds_loss_by_pixels)
+    ds_loss_by_pixels = tf.compat.v1.placeholder(tf.float32, [2, h, w, 3])
+    [gst, gsr] = tf.gradients(ys=ims, xs=[translation, rotation_xy], grad_ys=ds_loss_by_pixels)
 
-    session = tf.Session(config=tf.ConfigProto(gpu_options=tf.GPUOptions(allow_growth=True)))
+    session = tf.compat.v1.Session(config=tf.compat.v1.ConfigProto(gpu_options=tf.compat.v1.GPUOptions(allow_growth=True)))
     with session.as_default():
-        tf.global_variables_initializer().run()
+        tf.compat.v1.global_variables_initializer().run()
 
         gx_im = np.empty([h, w, 3], dtype=np.float32)
         gy_im = np.empty([h, w, 3], dtype=np.float32)
@@ -147,4 +147,3 @@ def mesh():
 
 if __name__ == '__main__':
     mesh()
-

@@ -76,7 +76,7 @@ def main():
         diffuse_contribution = tf.reshape(diffuse_contribution, [frame_height, frame_width, 3])
 
         # Calculate a white specular (Phong) lighting component
-        camera_position_world = tf.matrix_inverse(view_matrix)[3, :3]
+        camera_position_world = tf.linalg.inv(view_matrix)[3, :3]
         specular_contribution = lighting.specular_directional(
             tf.reshape(positions, [-1, 3]),
             tf.reshape(normals, [-1, 3]),
@@ -116,12 +116,12 @@ def main():
         shader_additional_inputs=[view_matrix, light_direction]
     )
 
-    save_pixels = tf.write_file(
+    save_pixels = tf.io.write_file(
         'deferred.jpg',
         tf.image.encode_jpeg(tf.cast(pixels * 255, tf.uint8))
     )
 
-    session = tf.Session(config=tf.ConfigProto(gpu_options=tf.GPUOptions(allow_growth=True)))
+    session = tf.compat.v1.Session(config=tf.compat.v1.ConfigProto(gpu_options=tf.compat.v1.GPUOptions(allow_growth=True)))
     with session.as_default():
 
         save_pixels.run()
@@ -129,4 +129,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-

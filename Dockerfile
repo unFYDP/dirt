@@ -4,7 +4,6 @@ ARG CUDNN_VERSION
 
 # use CUDA + OpenGL
 FROM nvidia/cudagl:${CUDA_BASE_VERSION}-devel-ubuntu${UBUNTU_VERSION}
-MAINTAINER Domhnall Boyle (domhnallboyle@gmail.com)
 
 # arguments from command line
 ARG CUDA_BASE_VERSION
@@ -30,9 +29,9 @@ RUN apt-get purge cmake && cd ~ && wget https://github.com/Kitware/CMake/release
 RUN cd ~/cmake-3.14.5 && ./bootstrap && make && make install
 
 # setting up cudnn
-RUN apt-get install -y --no-install-recommends \             
-	libcudnn7=$(echo $CUDNN_VERSION)-1+cuda$(echo $CUDA_BASE_VERSION) \             
-	libcudnn7-dev=$(echo $CUDNN_VERSION)-1+cuda$(echo $CUDA_BASE_VERSION) 
+RUN apt-get install -y --no-install-recommends \
+	libcudnn7=$(echo $CUDNN_VERSION)-1+cuda$(echo $CUDA_BASE_VERSION) \
+	libcudnn7-dev=$(echo $CUDNN_VERSION)-1+cuda$(echo $CUDA_BASE_VERSION)
 RUN apt-mark hold libcudnn7 && rm -rf /var/lib/apt/lists/*
 
 # install python dependencies
@@ -40,7 +39,7 @@ RUN pip install tensorflow-gpu==$(echo $TENSORFLOW_VERSION)
 
 # install dirt
 ENV CUDAFLAGS='-DNDEBUG=1'
-RUN cd ~ && git clone https://github.com/pmh47/dirt.git && \ 
+RUN cd ~ && git clone https://github.com/unFYDP/dirt.git && \
  	pip install dirt/
 
 # run dirt test command
