@@ -40,7 +40,7 @@ def main():
 
     if '.' in tf.__version__ and int(tf.__version__.split('.')[0]) < 2:
 
-        session = tf.compat.v1.Session()
+        session = tf.Session()
         with session.as_default():
 
             non_dirt_pixels = get_non_dirt_pixels().eval()
@@ -59,3 +59,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+

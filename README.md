@@ -7,7 +7,7 @@ DIRT is very fast: it uses OpenGL for rasterisation, running on the GPU, which a
 lightweight interoperation with CUDA.
 
 The following images illustrate the capabilities of DIRT; see
-[`samples`](https://github.com/unFYDP/dirt/tree/master/samples) for source
+[`samples`](https://github.com/pmh47/dirt/tree/master/samples) for source
 code. The first uses simple monochromatic diffuse lighting calculated per-vertex and
 interpolated with Gouraud shading; the others use per-pixel (deferred) lighting and
 texture calculations.
@@ -89,7 +89,7 @@ pixels = dirt.rasterise(
 
 - an Nvidia GPU; the earliest drivers we have tested with are v367
 - Linux; we have only tested on Ubuntu, but other distributions should work
-- a GPU-enabled install of TensorFlow, versions 2.0.x/2.1.x
+- a GPU-enabled install of TensorFlow, version 1.6 or later
 - python 2.7.9 / 3.5 or newer
 - cmake 3.8 or newer
 - gcc 4.9 or newer
@@ -97,9 +97,11 @@ pixels = dirt.rasterise(
 
 ## Installation
 
+**Before** installing, you should activate a virtualenv with `tensorflow-gpu` installed (or ensure your system python has that package), as DIRT will use this to search for appropriate TensorFlow headers during installation.
+
 Simply clone this repository, then install with pip:
 ```
-git clone https://github.com/unFYDP/dirt.git
+git clone https://github.com/pmh47/dirt.git
 cd dirt
 pip install .
 ```
@@ -157,7 +159,7 @@ To sanity-check your build, run `python tests/square_test.py`, which should prod
 
 ```
 # clone dirt
-git clone https://github.com/unFYDP/dirt.git && cd dirt
+git clone https://github.com/pmh47/dirt.git && cd dirt
 
 # build the image
 export CUDA_BASE_VERSION=9.0

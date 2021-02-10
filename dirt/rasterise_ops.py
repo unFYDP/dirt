@@ -41,10 +41,10 @@ def rasterise(background, vertices, vertex_colors, faces, height=None, width=Non
     """
 
     with ops.name_scope(name, 'Rasterise', [background, vertices, vertex_colors, faces]) as scope:
-        background = tf.convert_to_tensor(value=background, name='background', dtype=tf.float32)
-        vertices = tf.convert_to_tensor(value=vertices, name='vertices', dtype=tf.float32)
-        vertex_colors = tf.convert_to_tensor(value=vertex_colors, name='vertex_colors', dtype=tf.float32)
-        faces = tf.convert_to_tensor(value=faces, name='faces', dtype=tf.int32)
+        background = tf.convert_to_tensor(background, name='background', dtype=tf.float32)
+        vertices = tf.convert_to_tensor(vertices, name='vertices', dtype=tf.float32)
+        vertex_colors = tf.convert_to_tensor(vertex_colors, name='vertex_colors', dtype=tf.float32)
+        faces = tf.convert_to_tensor(faces, name='faces', dtype=tf.int32)
         return rasterise_batch(background[None], vertices[None], vertex_colors[None], faces[None], height, width, channels, name)[0]
 
 
@@ -65,10 +65,10 @@ def rasterise_batch(background, vertices, vertex_colors, faces, height=None, wid
     """
 
     with ops.name_scope(name, 'RasteriseBatch', [background, vertices, vertex_colors, faces]) as scope:
-        background = tf.convert_to_tensor(value=background, name='background', dtype=tf.float32)
-        vertices = tf.convert_to_tensor(value=vertices, name='vertices', dtype=tf.float32)
-        vertex_colors = tf.convert_to_tensor(value=vertex_colors, name='vertex_colors', dtype=tf.float32)
-        faces = tf.convert_to_tensor(value=faces, name='faces', dtype=tf.int32)
+        background = tf.convert_to_tensor(background, name='background', dtype=tf.float32)
+        vertices = tf.convert_to_tensor(vertices, name='vertices', dtype=tf.float32)
+        vertex_colors = tf.convert_to_tensor(vertex_colors, name='vertex_colors', dtype=tf.float32)
+        faces = tf.convert_to_tensor(faces, name='faces', dtype=tf.int32)
 
         if height is None:
             height = int(background.get_shape()[1])
@@ -220,9 +220,9 @@ def _rasterise_deferred_internal(background, vertices, attributes, faces, shader
                 )
             else:
                 d_loss_by_gbuffer_and_shader_additional_inputs = tf.gradients(
-                    ys=pixels,
-                    xs=[gbuffer] + list(shader_additional_inputs),
-                    grad_ys=d_loss_by_pixels
+                    pixels,
+                    [gbuffer] + list(shader_additional_inputs),
+                    d_loss_by_pixels
                 )
                 d_loss_by_gbuffer = d_loss_by_gbuffer_and_shader_additional_inputs[0]
                 d_loss_by_shader_additional_inputs = d_loss_by_gbuffer_and_shader_additional_inputs[1:]
@@ -242,10 +242,10 @@ def _rasterise_deferred_internal(background, vertices, attributes, faces, shader
         return pixels, grad
 
     with ops.name_scope(name, 'RasteriseDeferred', [background, vertices, attributes, faces] + list(shader_additional_inputs)) as scope:
-        background = tf.convert_to_tensor(value=background, name='background', dtype=tf.float32)
-        vertices = tf.convert_to_tensor(value=vertices, name='vertices', dtype=tf.float32)
-        attributes = tf.convert_to_tensor(value=attributes, name='vertex_attributes', dtype=tf.float32)
-        faces = tf.convert_to_tensor(value=faces, name='faces', dtype=tf.int32)
+        background = tf.convert_to_tensor(background, name='background', dtype=tf.float32)
+        vertices = tf.convert_to_tensor(vertices, name='vertices', dtype=tf.float32)
+        attributes = tf.convert_to_tensor(attributes, name='vertex_attributes', dtype=tf.float32)
+        faces = tf.convert_to_tensor(faces, name='faces', dtype=tf.int32)
 
         return _impl(vertices, faces, attributes, background, *shader_additional_inputs)
 

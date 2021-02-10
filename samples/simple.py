@@ -24,7 +24,7 @@ def build_cube():
 
 
 def unit(vector):
-    return tf.convert_to_tensor(value=vector) / tf.norm(tensor=vector)
+    return tf.convert_to_tensor(vector) / tf.norm(vector)
 
 
 def main():
@@ -73,7 +73,7 @@ def main():
         width=frame_width, height=frame_height, channels=3
     )
 
-    session = tf.compat.v1.Session()
+    session = tf.Session()
     with session.as_default():
 
         pixels_eval = pixels.eval()
@@ -83,3 +83,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+

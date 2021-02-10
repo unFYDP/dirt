@@ -13,7 +13,7 @@ square_size = 4.
 def write_png(filename, image):
 
     image = tf.cast(image * 255, tf.uint8)
-    return tf.io.write_file(filename, tf.image.encode_png(image))
+    return tf.write_file(filename, tf.image.encode_png(image))
 
 
 def get_transformed_geometry(translation, rotation, scale):
@@ -110,7 +110,7 @@ def get_pixels_deferred_v1(transformed_vertices, faces, vertex_normals, vertex_c
 
     # Dilate the normals to ensure correct gradients on the silhouette
     gbuffer_mask = gbuffer_mask[:, :, None]
-    gbuffer_vertex_normals_world_dilated = tf.nn.max_pool2d(input=gbuffer_vertex_normals_world[None, ...], ksize=[1, 3, 3, 1], strides=[1, 1, 1, 1], padding='SAME')[0]
+    gbuffer_vertex_normals_world_dilated = tf.nn.max_pool(gbuffer_vertex_normals_world[None, ...], ksize=[1, 3, 3, 1], strides=[1, 1, 1, 1], padding='SAME')[0]
     gbuffer_vertex_normals_world = gbuffer_vertex_normals_world * gbuffer_mask + gbuffer_vertex_normals_world_dilated * (1. - gbuffer_mask)
 
     pixels = gbuffer_mask * calculate_shading(gbuffer_vertex_colours_world, gbuffer_vertex_normals_world, light_intensity) + (1. - gbuffer_mask) * background
@@ -147,8 +147,8 @@ def prepare_gradient_images(deferred_gradients, direct_gradients):
     # Concatenate then normalise, to ensure direct and deferred gradients are treated identically
     # ** tidy up the mess of concats / transposes / reshapes here!
     all_gradients = tf.concat([direct_gradients, deferred_gradients], axis=0)
-    all_gradients_normalised = all_gradients - tf.reduce_min(input_tensor=all_gradients, axis=[0, 1, 2], keepdims=True)
-    all_gradients_normalised /= tf.reduce_max(input_tensor=all_gradients_normalised, axis=[0, 1, 2], keepdims=True)
+    all_gradients_normalised = all_gradients - tf.reduce_min(all_gradients, axis=[0, 1, 2], keepdims=True)
+    all_gradients_normalised /= tf.reduce_max(all_gradients_normalised, axis=[0, 1, 2], keepdims=True)
 
     epsilon = 1.e-3
     all_gradients_signs = tf.stack([
@@ -158,8 +158,8 @@ def prepare_gradient_images(deferred_gradients, direct_gradients):
     ], axis=2)
 
     all_gradients_images = tf.concat([
-        tf.reshape(tf.transpose(a=all_gradients_normalised, perm=[0, 3, 1, 2]), [2, canvas_height, -1, 3]),
-        tf.reshape(tf.transpose(a=all_gradients_signs, perm=[0, 3, 1, 2]), [2, canvas_height, -1, 3])
+        tf.reshape(tf.transpose(all_gradients_normalised, [0, 3, 1, 2]), [2, canvas_height, -1, 3]),
+        tf.reshape(tf.transpose(all_gradients_signs, [0, 3, 1, 2]), [2, canvas_height, -1, 3])
     ], axis=1)
 
     return all_gradients_images[0], all_gradients_images[1]
@@ -193,7 +193,7 @@ def main_graph():
             return tf.concat([
                 tf.reshape(d_pixel_by_variables, [-1])
                 for d_pixel_by_variables
-                in tf.gradients(ys=pixels, xs=variables, grad_ys=d_loss_by_pixels)
+                in tf.gradients(pixels, variables, d_loss_by_pixels)
             ], axis=0)
 
         d_pixels_by_variables = tf.reshape(
@@ -211,17 +211,17 @@ def main_graph():
     save_grads_direct = write_png('grads_direct_graph.png', direct_gradients_image)
     save_grads_deferred = write_png('grads_deferred_graph.png', deferred_gradients_image)
 
-    session = tf.compat.v1.Session(config=tf.compat.v1.ConfigProto(gpu_options=tf.compat.v1.GPUOptions(allow_growth=True)))
+    session = tf.Session(config=tf.ConfigProto(gpu_options=tf.GPUOptions(allow_growth=True)))
     with session.as_default():
 
-        tf.compat.v1.global_variables_initializer().run()
+        tf.global_variables_initializer().run()
 
         session.run([save_pixels_direct, save_pixels_deferred, save_grads_direct, save_grads_deferred])
 
 
 def main_eager():
 
-    tf.compat.v1.enable_eager_execution(config=tf.compat.v1.ConfigProto(gpu_options=tf.compat.v1.GPUOptions(allow_growth=True)))
+    tf.enable_eager_execution(config=tf.ConfigProto(gpu_options=tf.GPUOptions(allow_growth=True)))
 
     translation = tf.Variable([0., 0., 0.], name='translation')
     rotation = tf.Variable(0.5, name='rotation')
@@ -269,3 +269,4 @@ if __name__ == '__main__':
         main_eager()
     else:
         print('invalid execution mode; should be graph or eager')
+

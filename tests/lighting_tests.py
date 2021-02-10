@@ -17,15 +17,15 @@ def main():
     vertices, faces = make_cylinder(0.2, 0.75, 0.1, 0.2, 32)
     vertices = np.float32(np.concatenate([vertices, np.ones([len(vertices), 1])], axis=1))
 
-    rotation_xy = tf.compat.v1.placeholder(tf.float32, [])
-    rotation_matrix = tf.convert_to_tensor(value=[
+    rotation_xy = tf.placeholder(tf.float32, [])
+    rotation_matrix = tf.convert_to_tensor([
         [0.5 * tf.cos(rotation_xy), 0.5 * -tf.sin(rotation_xy), 0., 0.],
         [0.5 * tf.sin(rotation_xy), 0.5 * tf.cos(rotation_xy), 0., 0.],
         [0., 0., 0.5, 0.],
         [0., 0., 0., 1.]
     ])
 
-    translation = tf.compat.v1.placeholder(tf.float32, [3])
+    translation = tf.placeholder(tf.float32, [3])
     translation_matrix = tf.stack([
         [1., 0., 0., 0.],
         [0., 1., 0., 0.],
@@ -51,7 +51,7 @@ def main():
     point_im = dirt.rasterise_ops.rasterise(background=tf.zeros([h, w, 3]), vertices=projected_vertices, vertex_colors=tf.cast(dirt.lighting.diffuse_point(transformed_vertices[:, :3], vertex_normals, tf.ones([vertices.shape[0], 3]), [0.5, -1., 0.5], [1., 0.5, 0.9], False) + [0, 0, 0.4], tf.float32), faces=faces, height=h, width=w, channels=3)
     point_im_split = dirt.rasterise_ops.rasterise(background=tf.zeros([h, w, 3]), vertices=projected_vertices_split, vertex_colors=tf.cast(dirt.lighting.diffuse_point(transformed_vertices_split[:, :3], vertex_normals_split, tf.ones([transformed_vertices_split.shape[0], 3]), [0.5, -1., 0.5], [1., 0.5, 0.9], False) + [0, 0, 0.4], tf.float32), faces=faces_split, height=h, width=w, channels=3)
 
-    session = tf.compat.v1.Session()
+    session = tf.Session()
     with session.as_default():
 
         normal_im_ = normal_im.eval({translation: [0., 0., -0.25], rotation_xy: 0.})
@@ -68,3 +68,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+
