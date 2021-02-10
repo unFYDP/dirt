@@ -7,7 +7,7 @@ DIRT is very fast: it uses OpenGL for rasterisation, running on the GPU, which a
 lightweight interoperation with CUDA.
 
 The following images illustrate the capabilities of DIRT; see
-[`samples`](https://github.com/pmh47/dirt/tree/master/samples) for source
+[`samples`](https://github.com/unFYDP47/dirt/tree/master/samples) for source
 code. The first uses simple monochromatic diffuse lighting calculated per-vertex and
 interpolated with Gouraud shading; the others use per-pixel (deferred) lighting and
 texture calculations.
@@ -101,7 +101,7 @@ pixels = dirt.rasterise(
 
 Simply clone this repository, then install with pip:
 ```
-git clone https://github.com/pmh47/dirt.git
+git clone https://github.com/unFYDP47/dirt.git
 cd dirt
 pip install .
 ```
@@ -159,7 +159,7 @@ To sanity-check your build, run `python tests/square_test.py`, which should prod
 
 ```
 # clone dirt
-git clone https://github.com/pmh47/dirt.git && cd dirt
+git clone https://github.com/unFYDP47/dirt.git && cd dirt
 
 # build the image
 export CUDA_BASE_VERSION=9.0
