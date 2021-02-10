@@ -13,12 +13,12 @@ get_filename_component(NVCC_DIR ${CMAKE_CUDA_COMPILER} DIRECTORY)
 find_path(CUDA_INCLUDE_DIR NAMES cuda/include/cuda.h HINTS ${NVCC_DIR}/../.. PATHS ENV CUDA_HOME REQUIRED)
 
 # Ask tensorflow for its compile flags; one should therefore make sure cmake is run with the venv active that the op will be used in
-execute_process(COMMAND python -c "import tensorflow; print(' '.join(tensorflow.sysconfig.get_compile_flags()))" OUTPUT_VARIABLE Tensorflow_DEFAULT_COMPILE_FLAGS OUTPUT_STRIP_TRAILING_WHITESPACE)
+execute_process(COMMAND python3 -c "import tensorflow; print(' '.join(tensorflow.sysconfig.get_compile_flags()))" OUTPUT_VARIABLE Tensorflow_DEFAULT_COMPILE_FLAGS OUTPUT_STRIP_TRAILING_WHITESPACE)
 separate_arguments(Tensorflow_DEFAULT_COMPILE_FLAGS UNIX_COMMAND "${Tensorflow_DEFAULT_COMPILE_FLAGS}")
 set(Tensorflow_COMPILE_FLAGS "${Tensorflow_DEFAULT_COMPILE_FLAGS}" CACHE PATH "Tensorflow compile flags")
 
 # Ask tensorflow for its include path; check if cuda_launch_config exists where it should
-execute_process(COMMAND python -c "import tensorflow; print(tensorflow.sysconfig.get_include())" OUTPUT_VARIABLE Tensorflow_include_dir OUTPUT_STRIP_TRAILING_WHITESPACE)
+execute_process(COMMAND python3 -c "import tensorflow; print(tensorflow.sysconfig.get_include())" OUTPUT_VARIABLE Tensorflow_include_dir OUTPUT_STRIP_TRAILING_WHITESPACE)
 if(NOT EXISTS "${Tensorflow_include_dir}/tensorflow/core/util/cuda_launch_config.h")
   if(EXISTS "${Tensorflow_include_dir}/tensorflow/core/util/gpu_launch_config.h")
     add_definitions(-DUSE_GPU_LAUNCH_CONFIG_H)
@@ -28,7 +28,7 @@ if(NOT EXISTS "${Tensorflow_include_dir}/tensorflow/core/util/cuda_launch_config
 endif()
 
 # Ask tensorflow for the necessary linker flags
-execute_process(COMMAND python -c "import tensorflow; print(' '.join(tensorflow.sysconfig.get_link_flags()))" OUTPUT_VARIABLE Tensorflow_DEFAULT_LINK_FLAGS OUTPUT_STRIP_TRAILING_WHITESPACE)
+execute_process(COMMAND python3 -c "import tensorflow; print(' '.join(tensorflow.sysconfig.get_link_flags()))" OUTPUT_VARIABLE Tensorflow_DEFAULT_LINK_FLAGS OUTPUT_STRIP_TRAILING_WHITESPACE)
 set(Tensorflow_LINK_FLAGS "${Tensorflow_DEFAULT_LINK_FLAGS}" CACHE STRING "Tensorflow linker flags for custom ops")
 
 # in the following, we need ../external/tensorflow for cuda_config.h in tf versions with #16959 unfixed
